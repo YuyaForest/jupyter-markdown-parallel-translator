@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Jupyter Markdown Parallel Translator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Lora:ital,wght@0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f8fafc;
+    --panel:#ffffff;
+    --panel2:#f1f5f9;
+    --line:#e2e8f0;
+    --line-dark:#cbd5e1;
+    --text:#0f172a;
+    --muted:#475569;
+    --muted-light:#64748b;
+    --accent:#1d4ed8;
+    --accent-hover:#1e40af;
+    --accent-light:#eff6ff;
+    --accent2:#0284c7;
+    --good:#047857;
+    --good-hover:#065f46;
+    --good-light:#f0fdf4;
+    --warn:#b45309;
+    --warn-light:#fffbeb;
+    --err:#b91c1c;
+    --err-light:#fef2f2;
+    --chip:#f1f5f9;
+    --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+    --sans:'Inter',system-ui,-apple-system,"Segoe UI","Hiragino Sans","Yu Gothic UI",sans-serif;
+    --serif:'Lora',Georgia,Cambria,"Times New Roman",Times,serif;
+    --shadow-sm:0 1px 2px 0 rgba(15, 23, 42, 0.05);
+    --shadow-md:0 4px 6px -1px rgba(15, 23, 42, 0.06), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);height:100vh;overflow:hidden;-webkit-font-smoothing:antialiased;}
+  header{height:auto;min-height:76px;padding:14px 24px;border-bottom:1px solid var(--line-dark);background:#ffffff;display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;box-shadow:var(--shadow-sm);}
+  h1{font-family:var(--serif);font-size:20px;margin:0 0 3px;font-weight:700;letter-spacing:-0.01em;color:#0f172a;}
+  .sub{font-size:12px;color:var(--muted);font-weight:400;}
+  .brand{display:flex;gap:14px;align-items:center;}
+  .logo{width:42px;height:42px;border-radius:8px;background:linear-gradient(135deg,#1e3a8a,#1d4ed8);color:#ffffff;display:grid;place-items:center;font-family:var(--serif);font-weight:700;font-size:14px;letter-spacing:-0.5px;box-shadow:0 2px 4px rgba(29,78,216,0.25);border:1px solid #1e40af;}
+  .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .btn,.fileBtn{border:1px solid var(--line-dark);background:#ffffff;color:var(--text);border-radius:6px;padding:8px 14px;font-size:12px;font-weight:500;cursor:pointer;transition:all 0.15s ease;box-shadow:var(--shadow-sm);display:inline-flex;align-items:center;justify-content:center;}
+  .btn:hover,.fileBtn:hover{border-color:#94a3b8;background:#f8fafc;color:#0f172a;}
+  .btn.primary{background:var(--accent);border-color:var(--accent-hover);color:#ffffff;font-weight:600;}
+  .btn.primary:hover{background:var(--accent-hover);border-color:#1e3a8a;color:#ffffff;}
+  .btn.good{background:var(--good);border-color:var(--good-hover);color:#ffffff;font-weight:600;}
+  .btn.good:hover{background:var(--good-hover);border-color:#046c4e;color:#ffffff;}
+  .btn.warn{background:#ffffff;border-color:#cbd5e1;color:var(--warn);}
+  .btn.warn:hover{background:var(--warn-light);border-color:#f59e0b;color:#b45309;}
+  .btn:disabled{opacity:.45;cursor:not-allowed;box-shadow:none;}
+  input[type=file]{display:none}
+  select,input[type=number],textarea{background:#ffffff;color:var(--text);border:1px solid var(--line-dark);border-radius:6px;padding:8px 10px;font-family:var(--sans);font-size:12px;transition:border-color 0.15s, box-shadow 0.15s;}
+  select:focus,input[type=number]:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(29,78,216,0.12);}
+  input[type=number]{width:70px}
+  .layout{display:grid;grid-template-columns:340px 1fr;height:calc(100vh - 76px);min-height:0}
+  .sidebar{border-right:1px solid var(--line);background:#ffffff;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:14px;}
+  .main{overflow:auto;padding:20px;background:var(--bg);}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden;box-shadow:var(--shadow-sm);}
+  .cardHead{padding:10px 14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:8px;align-items:center;background:#f8fafc;font-family:var(--serif);font-weight:600;font-size:13px;color:#1e293b;}
+  .cardBody{padding:14px}
+  .hint{font-size:12px;color:var(--muted);line-height:1.6}
+  .statGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+  .stat{background:#f8fafc;border:1px solid var(--line);border-radius:6px;padding:10px 12px}
+  .stat b{display:block;font-size:18px;font-family:var(--serif);color:var(--accent);font-weight:700}
+  .stat span{font-size:11px;color:var(--muted);font-weight:500}
+  .progress{height:7px;background:#e2e8f0;border-radius:999px;overflow:hidden;margin-bottom:2px;}
+  .bar{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:.25s}
+  .chunkGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:16px}
+  .chunk{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden;min-height:360px;display:flex;flex-direction:column;box-shadow:var(--shadow-sm);transition:box-shadow 0.2s ease, border-color 0.2s ease;}
+  .chunk:hover{box-shadow:var(--shadow-md);border-color:#cbd5e1;}
+  .chunkHead{padding:12px 14px;border-bottom:1px solid var(--line);background:#f8fafc;display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .title{font-size:13px;font-weight:700;font-family:var(--serif);color:#0f172a;}
+  .meta{font-size:11px;color:var(--muted);font-family:var(--mono);}
+  .badge{font-size:11px;font-weight:600;border:1px solid var(--line-dark);border-radius:999px;padding:3px 10px;background:var(--chip);white-space:nowrap}
+  .badge.idle{color:var(--muted);background:#f1f5f9;border-color:#cbd5e1;}
+  .badge.running{color:var(--accent);border-color:#93c5fd;background:var(--accent-light);}
+  .badge.done{color:var(--good);border-color:#86efac;background:var(--good-light);}
+  .badge.err{color:var(--err);border-color:#fca5a5;background:var(--err-light);}
+  .areas{display:grid;grid-template-rows:1fr 1fr;gap:10px;padding:12px;flex:1;min-height:0}
+  textarea{width:100%;height:135px;resize:vertical;line-height:1.5;font-family:var(--mono);font-size:12px;border:1px solid var(--line-dark);border-radius:6px;background:#fafafa;}
+  textarea:focus{background:#ffffff;}
+  .label{display:flex;justify-content:space-between;align-items:center;margin:0 0 6px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.03em;}
+  .sep{padding:8px 12px;background:#eff6ff;border-top:1px solid #bfdbfe;border-bottom:1px solid #bfdbfe;color:#1e40af;font-size:11px;font-family:var(--mono);font-weight:500;}
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+  .pill{font-size:12px;font-weight:500;background:#ffffff;border:1px solid var(--line-dark);border-radius:999px;padding:6px 12px;color:var(--muted);box-shadow:var(--shadow-sm);}
+  .drop{border:2px dashed #93c5fd;border-radius:8px;padding:20px 14px;text-align:center;background:#eff6ff;transition:all 0.2s ease;}
+  .drop.drag{background:#dbeafe;border-color:var(--accent);}
+  .drop b{font-family:var(--serif);color:#1e40af;font-size:14px;}
+  .log{white-space:pre-wrap;font-family:var(--mono);font-size:11px;line-height:1.5;color:#334155;max-height:180px;overflow:auto;background:#f8fafc;border:1px solid var(--line-dark);border-radius:6px;padding:10px}
+  .small{font-size:11px;color:var(--muted);font-weight:500}
+  @media(max-width:900px){.layout{grid-template-columns:1fr}.sidebar{max-height:40vh;border-right:none;border-bottom:1px solid var(--line)}body{overflow:auto}.layout{height:auto}.main{overflow:visible}.chunkGrid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><div class="logo">ipynb</div><div><h1>Jupyter Markdown Parallel Translator</h1><div class="sub">コードセルを区切りとしてMarkdownセルの塊を抽出し、Chrome Built-in AI Prompt APIで並列翻訳</div></div></div>
+  <div class="controls">
+    <label class="fileBtn" for="fileInput">.ipynbを開く</label><input id="fileInput" type="file" accept=".ipynb,application/json" />
+    <select id="targetLang"><option value="ja">日本語</option><option value="en">English</option><option value="ko">한국어</option><option value="zh-Hans">简体中文</option><option value="zh-Hant">繁體中文</option></select>
+    <span class="small">並列数</span><input id="concurrency" type="number" min="1" max="10" value="4" />
+    <button id="checkBtn" class="btn">AI確認</button><button id="translateBtn" class="btn primary" disabled>全塊を並列翻訳</button><button id="downloadBtn" class="btn good" disabled>翻訳済みipynb保存</button><button id="clearBtn" class="btn warn">クリア</button>
+  </div>
+</header>
+<div class="layout">
+  <aside class="sidebar">
+    <div id="drop" class="drop"><b>ここに .ipynb をドロップ</b><br><span class="hint">Notebook JSONをブラウザ内で解析します。コードセルの中身は送信せず、Markdownセルだけを翻訳対象にします。</span></div>
+    <div class="card"><div class="cardHead"><b>抽出ルール</b></div><div class="cardBody hint">
+      1. セル順を維持して走査<br>2. 連続するMarkdownセルを1つの塊に結合<br>3. codeセルが現れたら翻訳塊を確定し、コード区切りとして記録<br>4. 翻訳後は元NotebookのMarkdownセルに按分して戻す<br><br>
+      長い塊はモデル制限に当たりやすいため、必要に応じて右側の原文欄で分割・編集してください。
+    </div></div>
+    <div class="card"><div class="cardHead"><b>ステータス</b><span id="apiBadge" class="badge idle">未確認</span></div><div class="cardBody"><div class="progress"><div id="progressBar" class="bar"></div></div><div class="statGrid"><div class="stat"><b id="mdCount">0</b><span>Markdownセル</span></div><div class="stat"><b id="chunkCount">0</b><span>翻訳塊</span></div><div class="stat"><b id="codeCount">0</b><span>コード区切り</span></div><div class="stat"><b id="doneCount">0</b><span>完了</span></div></div></div></div>
+    <div class="card"><div class="cardHead"><b>ログ</b></div><div class="cardBody"><div id="log" class="log">起動しました。</div></div></div>
+  </aside>
+  <main class="main"><div class="toolbar"><span class="pill" id="fileName">ファイル未選択</span><span class="pill" id="modelInfo">Prompt API優先、Translator APIは補助</span><button id="copyAllBtn" class="btn" disabled>訳文をまとめてコピー</button></div><div id="chunks" class="chunkGrid"></div></main>
+</div>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  let notebook = null, chunks = [], api = { lm:null, translator:null, mode:'none' };
+  const log = msg => { const t = new Date().toLocaleTimeString(); $('log').textContent += `\n[${t}] ${msg}`; $('log').scrollTop = $('log').scrollHeight; };
+  const joinSource = src => Array.isArray(src) ? src.join('') : (src || '');
+  const splitLines = text => text.endsWith('\n') ? text.match(/.*\n/g) || [text] : text.split(/(?<=\n)/);
+  const boundary = n => `<!-- __MD_CELL_BOUNDARY_${n}__ -->`;
+  const boundaryRegex = /\n?<!-- __MD_CELL_BOUNDARY_\d+__ -->\n?/g;
+  function setBadge(text, cls){ $('apiBadge').className = 'badge ' + cls; $('apiBadge').textContent = text; }
+  function setProgress(){ const done = chunks.filter(c=>c.status==='done').length; $('doneCount').textContent = done; $('progressBar').style.width = chunks.length ? (done/chunks.length*100)+'%' : '0%'; }
+  function extractChunks(nb){
+    const result=[]; let current=null; let codeSep=0, mdCells=0;
+    nb.cells.forEach((cell, idx) => {
+      if(cell.cell_type === 'markdown'){
+        mdCells++;
+        if(!current) current={id:result.length+1,start:idx,end:idx,cellIndexes:[],source:'',translation:'',status:'idle',error:'',codeBefore:codeSep,parts:[]};
+        const text=joinSource(cell.source);
+        if(current.cellIndexes.length){ current.source += (current.source.endsWith('\n') ? '' : '\n') + boundary(idx) + '\n'; }
+        current.cellIndexes.push(idx); current.parts.push({cellIndex:idx,text}); current.source += text; current.end=idx;
+      } else if(cell.cell_type === 'code'){
+        if(current){ result.push(current); current=null; }
+        codeSep++;
+      } else {
+        if(current){ result.push(current); current=null; }
+      }
+    });
+    if(current) result.push(current);
+    return {result, mdCells, codeSep};
+  }
+  function render(){
+    $('chunks').innerHTML='';
+    chunks.forEach((c,i)=>{
+      const el=document.createElement('section'); el.className='chunk';
+      const statusClass = c.status==='running'?'running':c.status==='done'?'done':c.status==='error'?'err':'idle';
+      const sep = c.codeBefore>0 ? `<div class="sep">&lt;コードセル除外 × ${c.codeBefore} までの区切り後&gt;</div>` : '';
+      el.innerHTML=`<div class="chunkHead"><div><div class="title">Markdown塊 ${i+1}</div><div class="meta">cells ${c.cellIndexes.map(x=>x+1).join(', ')} / ${c.source.length} chars</div></div><span class="badge ${statusClass}">${c.status}</span></div>${sep}<div class="areas"><div><div class="label"><span>原文 Markdown</span><button class="btn" data-act="one" data-i="${i}">この塊を翻訳</button></div><textarea data-field="source" data-i="${i}"></textarea></div><div><div class="label"><span>訳文 Markdown</span><button class="btn" data-act="copy" data-i="${i}">コピー</button></div><textarea data-field="translation" data-i="${i}" placeholder="翻訳結果"></textarea></div></div>`;
+      $('chunks').appendChild(el);
+      el.querySelector('[data-field=source]').value=c.source; el.querySelector('[data-field=translation]').value=c.translation;
+    });
+    $('chunkCount').textContent = chunks.length; setProgress(); $('translateBtn').disabled = !chunks.length; $('copyAllBtn').disabled = !chunks.length; $('downloadBtn').disabled = !chunks.some(c=>c.translation);
+  }
+  $('chunks').addEventListener('input',e=>{ const i=+e.target.dataset.i; if(e.target.dataset.field==='source') chunks[i].source=e.target.value; if(e.target.dataset.field==='translation') chunks[i].translation=e.target.value; });
+  $('chunks').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; const i=+b.dataset.i; if(b.dataset.act==='one') translateOne(i).then(render); if(b.dataset.act==='copy') navigator.clipboard?.writeText(chunks[i].translation||''); });
+  async function handleFile(file){
+    try{ const text=await file.text(); notebook=JSON.parse(text); if(!Array.isArray(notebook.cells)) throw new Error('cells配列がありません');
+      const x=extractChunks(notebook); chunks=x.result; $('fileName').textContent=file.name; $('mdCount').textContent=x.mdCells; $('codeCount').textContent=x.codeSep; log(`${file.name} を読み込み、Markdown ${x.mdCells}セルを ${chunks.length}塊に抽出しました。`); render();
+    }catch(err){ log('読込エラー: '+err.message); alert('Notebookの読み込みに失敗しました: '+err.message); }
+  }
+  $('fileInput').addEventListener('change',e=>{ if(e.target.files[0]) handleFile(e.target.files[0]); });
+  ['dragenter','dragover'].forEach(ev=>$('drop').addEventListener(ev,e=>{e.preventDefault();$('drop').classList.add('drag')}));
+  ['dragleave','drop'].forEach(ev=>$('drop').addEventListener(ev,e=>{e.preventDefault();$('drop').classList.remove('drag')}));
+  $('drop').addEventListener('drop',e=>{ const f=e.dataTransfer.files[0]; if(f) handleFile(f); });
+  async function checkAI(){
+    api={lm:null,translator:null,mode:'none'}; setBadge('確認中','running');
+    try{
+      const LM = globalThis.LanguageModel || globalThis.ai?.languageModel;
+      if(LM?.availability && LM?.create){ const av=await LM.availability(); log('LanguageModel availability: '+av); if(av!=='unavailable'){ api.lm = await LM.create({ monitor(m){ m.addEventListener?.('downloadprogress', e=>log(`Prompt model download: ${Math.round((e.loaded||0)*100)}%`)); }}); api.mode='prompt'; setBadge('Prompt API','done'); return; }}
+      const T = globalThis.Translator || globalThis.translation;
+      if(globalThis.Translator?.availability){ const av=await Translator.availability({sourceLanguage:'en',targetLanguage:$('targetLang').value}); log('Translator availability: '+av); if(av!=='unavailable'){ api.translator=await Translator.create({sourceLanguage:'en',targetLanguage:$('targetLang').value}); api.mode='translator'; setBadge('Translator API','done'); return; }}
+      setBadge('利用不可','err'); log('Built-in AIが見つかりません。Chromeのバージョン、フラグ、on-device-internalsを確認してください。');
+    }catch(err){ setBadge('エラー','err'); log('AI確認エラー: '+err.message); }
+  }
+  $('checkBtn').addEventListener('click',checkAI);
+  function buildPrompt(markdown){ const lang=$('targetLang').selectedOptions[0].textContent; return `あなたは技術文書とJupyter Notebookに詳しい翻訳者です。次のMarkdownを${lang}へ翻訳してください。\n\n要件:\n- Markdown構造、見出し、箇条書き、表、リンク、数式、インラインコード、コードフェンスを維持する。\n- <!-- __MD_CELL_BOUNDARY_N__ --> 形式のHTMLコメントは翻訳・削除・変更せず、そのまま保持する。\n- 変数名、関数名、ファイル名、URL、数式、引用符内のコードは翻訳しない。\n- 不自然な直訳を避け、読みやすく整える。\n- 出力は翻訳済みMarkdown本文のみ。説明、前置き、後書きは不要。\n\nMarkdown:\n${markdown}`; }
+  async function translateText(text){
+    if(!api.mode || api.mode==='none') await checkAI();
+    if(api.mode==='prompt' && api.lm){ return (await api.lm.prompt(buildPrompt(text))).trim(); }
+    if(api.mode==='translator' && api.translator){ return await api.translator.translate(text); }
+    throw new Error('Chrome Built-in AIが利用できません');
+  }
+  async function translateOne(i){ chunks[i].status='running'; chunks[i].error=''; render(); try{ chunks[i].translation=await translateText(chunks[i].source); chunks[i].status='done'; log(`Markdown塊 ${i+1} 翻訳完了`); }catch(err){ chunks[i].status='error'; chunks[i].error=err.message; log(`Markdown塊 ${i+1} エラー: ${err.message}`); } setProgress(); }
+  async function runPool(){ const n=Math.max(1,Math.min(10,+$('concurrency').value||4)); let next=0; async function worker(){ while(next<chunks.length){ const i=next++; await translateOne(i); } } await Promise.all(Array.from({length:Math.min(n,chunks.length)},worker)); render(); }
+  $('translateBtn').addEventListener('click',runPool);
+  $('copyAllBtn').addEventListener('click',()=>navigator.clipboard?.writeText(chunks.map((c,i)=>`<!-- Markdown block ${i+1} -->\n${c.translation}`).join('\n\n')));
+  function applyTranslations(){ if(!notebook) return null; const clone=JSON.parse(JSON.stringify(notebook)); chunks.forEach(c=>{ if(!c.translation) return; const pieces = c.translation.split(boundaryRegex);
+      c.cellIndexes.forEach((cellIdx,k)=>{ clone.cells[cellIdx].source = splitLines((pieces[k] || '').trim() + '\n'); }); }); return clone; }
+  $('downloadBtn').addEventListener('click',()=>{ const out=applyTranslations(); if(!out) return; const blob=new Blob([JSON.stringify(out,null,2)],{type:'application/json'}); const a=document.createElement('a'); const base=($('fileName').textContent||'notebook').replace(/\.ipynb$/,''); a.href=URL.createObjectURL(blob); a.download=base+'.translated.ipynb'; a.click(); URL.revokeObjectURL(a.href); });
+  $('clearBtn').addEventListener('click',()=>{notebook=null;chunks=[];$('fileName').textContent='ファイル未選択';$('mdCount').textContent='0';$('codeCount').textContent='0';$('doneCount').textContent='0';$('progressBar').style.width='0%';$('chunks').innerHTML='';log('クリアしました。');render();});
+  render(); checkAI();
+})();
+</script>
+</body>
+</html>
